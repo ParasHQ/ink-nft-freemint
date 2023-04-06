@@ -18,8 +18,6 @@ const BASE_URI = "ipfs://tokenUriPrefix/";
 const COLLECTION_METADATA = "ipfs://collectionMetadata/data.json";
 const TOKEN_URI_1 = "ipfs://tokenUriPrefix/1.json";
 const TOKEN_URI_5 = "ipfs://tokenUriPrefix/5.json";
-const ONE = new BN(0);
-const PRICE_PER_MINT = ONE;
 
 // Create a new instance of contract
 const wsProvider = new WsProvider("ws://127.0.0.1:9944");
@@ -47,14 +45,7 @@ describe("Minting psp34 tokens", () => {
     projectAccount = keyring.addFromUri("//Charlie");
     shiden34Factory = new Shiden34_factory(api, deployer);
     contract = new Shiden34(
-      (
-        await shiden34Factory.new(
-          ["Shiden34"],
-          ["SH34"],
-          [BASE_URI],
-          PRICE_PER_MINT
-        )
-      ).address,
+      (await shiden34Factory.new(["Shiden34"], ["SH34"], [BASE_URI])).address,
       deployer,
       api
     );
@@ -70,12 +61,6 @@ describe("Minting psp34 tokens", () => {
     expect(
       (await contract.query.maxSupply()).value.unwrap().toNumber()
     ).to.equal(0);
-    expect((await contract.query.price()).value.unwrap().toString()).to.equal(
-      PRICE_PER_MINT.toString()
-    );
-
-    // expect((await contract.query.getAttribute({u128: collectionId}, ["baseUri"])).value).to.equal(BASE_URI);
-    // expect((await contract.query.getAttribute(collectionId, ["baseUri"])).value).to.equal(BASE_URI);
   });
 
   it("Use mintNext works", async () => {
@@ -92,7 +77,7 @@ describe("Minting psp34 tokens", () => {
 
     let mintResult = await contract
       .withSigner(bob)
-      .tx.mintNext({ value: PRICE_PER_MINT, gasLimit: gasRequired });
+      .tx.mintNext({ value: 0, gasLimit: gasRequired });
 
     // verify minting results. The totalSupply value is BN
     expect(
@@ -119,7 +104,7 @@ describe("Minting psp34 tokens", () => {
       .gasRequired;
     let mintResult = await contract
       .withSigner(bob)
-      .tx.mintNext({ value: PRICE_PER_MINT, gasLimit: gasRequired });
+      .tx.mintNext({ value: 0, gasLimit: gasRequired });
 
     const firstTokenId = IdBuilder.U64(1);
 
@@ -160,7 +145,7 @@ describe("Minting psp34 tokens", () => {
     let { gasRequired } = await contract.withSigner(bob).query.mintNext();
     await contract
       .withSigner(bob)
-      .tx.mintNext({ value: PRICE_PER_MINT, gasLimit: gasRequired });
+      .tx.mintNext({ value: 0, gasLimit: gasRequired });
 
     const firstTokenId = IdBuilder.U64(1);
 
@@ -204,7 +189,7 @@ describe("Minting psp34 tokens", () => {
       (await contract.query.totalSupply()).value.unwrap().toNumber()
     ).to.equal(0);
 
-    await contract.withSigner(bob).tx.setMintEnd(true);
+    await contract.withSigner(deployer).tx.setMintEnd(true);
 
     const mintEnd = contract.query.getMintEnd();
 
@@ -229,7 +214,7 @@ describe("Minting psp34 tokens", () => {
     const { gasRequired } = await contract.withSigner(bob).query.mintNext();
     await contract
       .withSigner(bob)
-      .tx.mintNext({ value: PRICE_PER_MINT, gasLimit: gasRequired });
+      .tx.mintNext({ value: 0, gasLimit: gasRequired });
 
     alreadyMinted = await contract.query.getIsAccountMinted(bob.address);
     expect(alreadyMinted.value.ok).to.equal(true);
