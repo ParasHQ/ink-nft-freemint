@@ -3,18 +3,30 @@
 
 #[openbrush::contract]
 pub mod shiden34 {
-    use ink::codegen::{EmitEvent, Env};
+    use ink::codegen::{
+        EmitEvent,
+        Env,
+    };
     use openbrush::{
         contracts::{
             ownable::*,
-            psp34::extensions::{enumerable::*, metadata::*},
+            psp34::extensions::{
+                enumerable::*,
+                metadata::*,
+            },
             reentrancy_guard::*,
         },
         modifiers,
-        traits::{Storage, String},
+        traits::{
+            Storage,
+            String,
+        },
     };
 
-    use payable_mint_pkg::{impls::payable_mint::*, traits::payable_mint::*};
+    use payable_mint_pkg::{
+        impls::payable_mint::*,
+        traits::payable_mint::*,
+    };
 
     // Shiden34Contract contract storage
     #[ink(storage)]
@@ -124,12 +136,19 @@ pub mod shiden34 {
     mod tests {
         use super::*;
         use crate::shiden34::PSP34Error::*;
-        use ink::env::{pay_with_call, test};
-        use ink::prelude::string::String as PreludeString;
-        use payable_mint_pkg::impls::payable_mint::{payable_mint::Internal, types::Shiden34Error};
+        use ink::{
+            env::{
+                pay_with_call,
+                test,
+            },
+            prelude::string::String as PreludeString,
+        };
+        use payable_mint_pkg::impls::payable_mint::{
+            payable_mint::Internal,
+            types::Shiden34Error,
+        };
         const PRICE: Balance = 100_000_000_000_000_000;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
-        const MAX_SUPPLY: u64 = 10;
 
         #[ink::test]
         fn init_works() {
@@ -147,7 +166,7 @@ pub mod shiden34 {
                 sh34.get_attribute(collection_id, String::from("baseUri")),
                 Some(String::from(BASE_URI))
             );
-            assert_eq!(sh34.max_supply(), MAX_SUPPLY);
+            assert_eq!(sh34.max_supply(), 0);
             assert_eq!(sh34.price(), PRICE);
         }
 
@@ -156,7 +175,6 @@ pub mod shiden34 {
                 String::from("Shiden34"),
                 String::from("SH34"),
                 String::from(BASE_URI),
-                MAX_SUPPLY,
                 PRICE,
             )
         }
@@ -169,7 +187,7 @@ pub mod shiden34 {
             set_sender(accounts.bob);
 
             assert_eq!(sh34.total_supply(), 0);
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(PRICE);
+            test::set_value_transferred::<ink::env::DefaultEnvironment>(PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), 1);
             assert_eq!(sh34.owner_of(Id::U64(1)), Some(accounts.bob));
@@ -177,59 +195,7 @@ pub mod shiden34 {
 
             assert_eq!(sh34.owners_token_by_index(accounts.bob, 0), Ok(Id::U64(1)));
             assert_eq!(sh34.payable_mint.last_token_id, 1);
-            assert_eq!(1, ink_env::test::recorded_events().count());
-        }
-
-        #[ink::test]
-        fn mint_multiple_works() {
-            let mut sh34 = init();
-            let accounts = default_accounts();
-            set_sender(accounts.alice);
-            let num_of_mints: u64 = 5;
-            // Set max limit to 'num_of_mints', fails to mint 'num_of_mints + 1'. Caller is contract owner
-            assert!(sh34.set_max_mint_amount(num_of_mints).is_ok());
-            assert_eq!(
-                sh34.mint(accounts.bob, num_of_mints + 1),
-                Err(PSP34Error::Custom(
-                    Shiden34Error::TooManyTokensToMint.as_str()
-                ))
-            );
-
-            assert_eq!(sh34.total_supply(), 0);
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(
-                PRICE * num_of_mints as u128,
-            );
-            assert!(sh34.mint(accounts.bob, num_of_mints).is_ok());
-            assert_eq!(sh34.total_supply(), num_of_mints as u128);
-            assert_eq!(sh34.balance_of(accounts.bob), 5);
-            assert_eq!(sh34.owners_token_by_index(accounts.bob, 0), Ok(Id::U64(1)));
-            assert_eq!(sh34.owners_token_by_index(accounts.bob, 1), Ok(Id::U64(2)));
-            assert_eq!(sh34.owners_token_by_index(accounts.bob, 2), Ok(Id::U64(3)));
-            assert_eq!(sh34.owners_token_by_index(accounts.bob, 3), Ok(Id::U64(4)));
-            assert_eq!(sh34.owners_token_by_index(accounts.bob, 4), Ok(Id::U64(5)));
-            assert_eq!(5, ink_env::test::recorded_events().count());
-            assert_eq!(
-                sh34.owners_token_by_index(accounts.bob, 5),
-                Err(TokenNotExists)
-            );
-        }
-
-        #[ink::test]
-        fn mint_above_limit_fails() {
-            let mut sh34 = init();
-            let accounts = default_accounts();
-            set_sender(accounts.alice);
-            let num_of_mints: u64 = MAX_SUPPLY + 1;
-
-            assert_eq!(sh34.total_supply(), 0);
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(
-                PRICE * num_of_mints as u128,
-            );
-            assert!(sh34.set_max_mint_amount(num_of_mints).is_ok());
-            assert_eq!(
-                sh34.mint(accounts.bob, num_of_mints),
-                Err(PSP34Error::Custom(Shiden34Error::CollectionIsFull.as_str()))
-            );
+            assert_eq!(1, ink::env::test::recorded_events().count());
         }
 
         #[ink::test]
@@ -240,14 +206,14 @@ pub mod shiden34 {
             let num_of_mints = 1;
 
             assert_eq!(sh34.total_supply(), 0);
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(
+            test::set_value_transferred::<ink::env::DefaultEnvironment>(
                 PRICE * num_of_mints as u128 - 1,
             );
             assert_eq!(
                 sh34.mint(accounts.bob, num_of_mints),
                 Err(PSP34Error::Custom(Shiden34Error::BadMintValue.as_str()))
             );
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(
+            test::set_value_transferred::<ink::env::DefaultEnvironment>(
                 PRICE * num_of_mints as u128 - 1,
             );
             assert_eq!(
@@ -285,7 +251,7 @@ pub mod shiden34 {
             let accounts = default_accounts();
             set_sender(accounts.alice);
 
-            test::set_value_transferred::<ink_env::DefaultEnvironment>(PRICE);
+            test::set_value_transferred::<ink::env::DefaultEnvironment>(PRICE);
             assert!(sh34.mint_next().is_ok());
             // return error if request is for not yet minted token
             assert_eq!(sh34.token_uri(42), Err(TokenNotExists));
@@ -340,7 +306,6 @@ pub mod shiden34 {
                 String::from("Shiden34"),
                 String::from("SH34"),
                 String::from(BASE_URI),
-                max_supply,
                 PRICE,
             );
             sh34.payable_mint.last_token_id = max_supply - 1;
@@ -363,13 +328,11 @@ pub mod shiden34 {
 
         #[ink::test]
         fn check_value_overflow_ok() {
-            let max_supply = u64::MAX;
             let price = u128::MAX as u128;
             let sh34 = Shiden34Contract::new(
                 String::from("Shiden34"),
                 String::from("SH34"),
                 String::from(BASE_URI),
-                max_supply,
                 price,
             );
             let transferred_value = u128::MAX;
@@ -380,16 +343,16 @@ pub mod shiden34 {
             );
         }
 
-        fn default_accounts() -> test::DefaultAccounts<ink_env::DefaultEnvironment> {
+        fn default_accounts() -> test::DefaultAccounts<ink::env::DefaultEnvironment> {
             test::default_accounts::<Environment>()
         }
 
         fn set_sender(sender: AccountId) {
-            ink_env::test::set_caller::<Environment>(sender);
+            ink::env::test::set_caller::<Environment>(sender);
         }
 
         fn set_balance(account_id: AccountId, balance: Balance) {
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(account_id, balance)
+            ink::env::test::set_account_balance::<ink::env::DefaultEnvironment>(account_id, balance)
         }
     }
 }
