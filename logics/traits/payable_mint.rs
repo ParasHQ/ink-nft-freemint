@@ -2,7 +2,6 @@ use ink::prelude::string::String as PreludeString;
 
 use openbrush::{
     contracts::psp34::PSP34Error,
-    modifiers,
     traits::{
         AccountId,
         Balance,
@@ -51,7 +50,6 @@ pub trait PayableMint {
     fn get_max_mint_amount(&mut self) -> u64;
 
     #[ink(message)]
-    #[modifiers(only_owner)]
     fn set_mint_end(&mut self, status: bool) -> Result<(), PSP34Error>;
 
     #[ink(message)]
