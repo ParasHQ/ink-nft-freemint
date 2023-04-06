@@ -74,19 +74,13 @@ pub mod shiden34 {
 
     impl Shiden34Contract {
         #[ink(constructor)]
-        pub fn new(
-            name: String,
-            symbol: String,
-            base_uri: String,
-            price_per_mint: Balance,
-        ) -> Self {
+        pub fn new(name: String, symbol: String, base_uri: String) -> Self {
             let mut instance = Self::default();
             instance._init_with_owner(instance.env().caller());
             let collection_id = instance.collection_id();
             instance._set_attribute(collection_id.clone(), String::from("name"), name);
             instance._set_attribute(collection_id.clone(), String::from("symbol"), symbol);
             instance._set_attribute(collection_id, String::from("baseUri"), base_uri);
-            instance.payable_mint.price_per_mint = price_per_mint;
             instance.payable_mint.last_token_id = 0;
             instance.payable_mint.max_amount = 1;
             instance.payable_mint.mint_end = false;
@@ -143,11 +137,8 @@ pub mod shiden34 {
             },
             prelude::string::String as PreludeString,
         };
-        use payable_mint_pkg::impls::payable_mint::{
-            payable_mint::Internal,
-            types::Shiden34Error,
-        };
-        const PRICE: Balance = 100_000_000_000_000_000;
+        use payable_mint_pkg::impls::payable_mint::types::Shiden34Error;
+        const PRICE: Balance = 0;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
 
         #[ink::test]
@@ -167,7 +158,6 @@ pub mod shiden34 {
                 Some(String::from(BASE_URI))
             );
             assert_eq!(sh34.max_supply(), 0);
-            assert_eq!(sh34.price(), PRICE);
         }
 
         fn init() -> Shiden34Contract {
@@ -175,7 +165,6 @@ pub mod shiden34 {
                 String::from("Shiden34"),
                 String::from("SH34"),
                 String::from(BASE_URI),
-                PRICE,
             )
         }
 
@@ -196,31 +185,6 @@ pub mod shiden34 {
             assert_eq!(sh34.owners_token_by_index(accounts.bob, 0), Ok(Id::U64(1)));
             assert_eq!(sh34.payable_mint.last_token_id, 1);
             assert_eq!(1, ink::env::test::recorded_events().count());
-        }
-
-        #[ink::test]
-        fn mint_low_value_fails() {
-            let mut sh34 = init();
-            let accounts = default_accounts();
-            set_sender(accounts.bob);
-            let num_of_mints = 1;
-
-            assert_eq!(sh34.total_supply(), 0);
-            test::set_value_transferred::<ink::env::DefaultEnvironment>(
-                PRICE * num_of_mints as u128 - 1,
-            );
-            assert_eq!(
-                sh34.mint(accounts.bob, num_of_mints),
-                Err(PSP34Error::Custom(Shiden34Error::BadMintValue.as_str()))
-            );
-            test::set_value_transferred::<ink::env::DefaultEnvironment>(
-                PRICE * num_of_mints as u128 - 1,
-            );
-            assert_eq!(
-                sh34.mint_next(),
-                Err(PSP34Error::Custom(Shiden34Error::BadMintValue.as_str()))
-            );
-            assert_eq!(sh34.total_supply(), 0);
         }
 
         #[ink::test]
@@ -296,23 +260,6 @@ pub mod shiden34 {
             assert_eq!(
                 sh34.set_base_uri(NEW_BASE_URI.into()),
                 Err(PSP34Error::Custom(String::from("O::CallerIsNotOwner")))
-            );
-        }
-
-        #[ink::test]
-        fn check_value_overflow_ok() {
-            let price = u128::MAX as u128;
-            let sh34 = Shiden34Contract::new(
-                String::from("Shiden34"),
-                String::from("SH34"),
-                String::from(BASE_URI),
-                price,
-            );
-            let transferred_value = u128::MAX;
-            let mint_amount = u64::MAX;
-            assert_eq!(
-                sh34.check_value(transferred_value, mint_amount),
-                Err(PSP34Error::Custom(Shiden34Error::BadMintValue.as_str()))
             );
         }
 

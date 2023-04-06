@@ -2,10 +2,7 @@ use ink::prelude::string::String as PreludeString;
 
 use openbrush::{
     contracts::psp34::PSP34Error,
-    traits::{
-        AccountId,
-        Balance,
-    },
+    traits::AccountId,
 };
 
 #[openbrush::wrapper]
@@ -40,10 +37,6 @@ pub trait PayableMint {
     /// Get max supply of tokens
     #[ink(message)]
     fn max_supply(&self) -> u64;
-
-    /// Get token price
-    #[ink(message)]
-    fn price(&self) -> Balance;
 
     /// Get max number of tokens which could be minted per call
     #[ink(message)]

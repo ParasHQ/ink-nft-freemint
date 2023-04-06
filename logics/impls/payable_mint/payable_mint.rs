@@ -39,16 +39,12 @@ use openbrush::{
     modifiers,
     traits::{
         AccountId,
-        Balance,
         Storage,
         String,
     },
 };
 
 pub trait Internal {
-    /// Check if the transferred mint values is as expected
-    fn check_value(&self, transferred_value: u128, mint_amount: u64) -> Result<(), PSP34Error>;
-
     /// Check amount of tokens to be minted
     fn check_amount(&self, mint_amount: u64) -> Result<(), PSP34Error>;
 
@@ -71,7 +67,6 @@ where
     default fn mint(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error> {
         assert_eq!(mint_amount, 1);
         self.check_amount(mint_amount)?;
-        self.check_value(Self::env().transferred_value(), mint_amount)?;
         let caller = Self::env().caller();
 
         if self
@@ -108,7 +103,6 @@ where
 
     /// Mint next available token for the caller
     default fn mint_next(&mut self) -> Result<(), PSP34Error> {
-        self.check_value(Self::env().transferred_value(), 1)?;
         let caller = Self::env().caller();
         if self
             .data::<Data>()
@@ -200,11 +194,6 @@ where
             .unwrap()
     }
 
-    /// Get token price
-    default fn price(&self) -> Balance {
-        self.data::<Data>().price_per_mint
-    }
-
     /// Get max number of tokens which could be minted per call
     default fn get_max_mint_amount(&mut self) -> u64 {
         self.data::<Data>().max_amount
@@ -233,22 +222,6 @@ impl<T> Internal for T
 where
     T: Storage<Data> + Storage<psp34::Data<enumerable::Balances>>,
 {
-    /// Check if the transferred mint values is as expected
-    default fn check_value(
-        &self,
-        transferred_value: u128,
-        mint_amount: u64,
-    ) -> Result<(), PSP34Error> {
-        if let Some(value) = (mint_amount as u128).checked_mul(self.data::<Data>().price_per_mint) {
-            if transferred_value == value {
-                return Ok(())
-            }
-        }
-        return Err(PSP34Error::Custom(String::from(
-            Shiden34Error::BadMintValue.as_str(),
-        )))
-    }
-
     /// Check amount of tokens to be minted
     default fn check_amount(&self, mint_amount: u64) -> Result<(), PSP34Error> {
         if mint_amount == 0 {
