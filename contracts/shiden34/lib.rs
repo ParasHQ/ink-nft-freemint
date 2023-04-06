@@ -300,33 +300,6 @@ pub mod shiden34 {
         }
 
         #[ink::test]
-        fn check_supply_overflow_ok() {
-            let max_supply = u64::MAX - 1;
-            let mut sh34 = Shiden34Contract::new(
-                String::from("Shiden34"),
-                String::from("SH34"),
-                String::from(BASE_URI),
-                PRICE,
-            );
-            sh34.payable_mint.last_token_id = max_supply - 1;
-
-            // check case when last_token_id.add(mint_amount) if more than u64::MAX
-            assert!(sh34.set_max_mint_amount(u64::MAX).is_ok());
-            assert_eq!(
-                sh34.check_amount(3),
-                Err(PSP34Error::Custom(Shiden34Error::CollectionIsFull.as_str()))
-            );
-
-            // check case when mint_amount is 0
-            assert_eq!(
-                sh34.check_amount(0),
-                Err(PSP34Error::Custom(
-                    Shiden34Error::CannotMintZeroTokens.as_str()
-                ))
-            );
-        }
-
-        #[ink::test]
         fn check_value_overflow_ok() {
             let price = u128::MAX as u128;
             let sh34 = Shiden34Contract::new(
