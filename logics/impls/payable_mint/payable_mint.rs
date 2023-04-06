@@ -19,32 +19,19 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use ink::prelude::string::{
-    String as PreludeString,
-    ToString,
-};
+use ink::prelude::string::String as PreludeString;
 
-use crate::impls::payable_mint::types::{
-    Data,
-    Shiden34Error,
-};
+use crate::impls::payable_mint::types::{Data, Shiden34Error};
 pub use crate::traits::payable_mint::PayableMint;
+
 use openbrush::{
     contracts::{
         ownable::*,
-        psp34::extensions::{
-            enumerable::*,
-            metadata::*,
-        },
+        psp34::extensions::{enumerable::*, metadata::*},
         reentrancy_guard::*,
     },
     modifiers,
-    traits::{
-        AccountId,
-        Balance,
-        Storage,
-        String,
-    },
+    traits::{AccountId, Balance, Storage, String},
 };
 
 pub trait Internal {
@@ -71,26 +58,66 @@ where
     /// Mint one or more tokens
     #[modifiers(non_reentrant)]
     default fn mint(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error> {
+        assert_eq!(mint_amount, 1);
         self.check_amount(mint_amount)?;
         self.check_value(Self::env().transferred_value(), mint_amount)?;
+        let caller = Self::env().caller();
 
-        let next_to_mint = self.data::<Data>().last_token_id + 1; // first mint id is 1
+        if self
+            .data::<Data>()
+            .account_minted
+            .get(caller)
+            .unwrap_or(false)
+            == true
+        {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::CannotMintMoreThanOnce.as_str(),
+            )));
+        }
+
+        if self.data::<Data>().mint_end == true {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::MintEnd.as_str(),
+            )));
+        }
+
+        let next_to_mint = self.data::<Data>().last_token_id + 1;
         let mint_offset = next_to_mint + mint_amount;
 
         for mint_id in next_to_mint..mint_offset {
             self.data::<psp34::Data<enumerable::Balances>>()
                 ._mint_to(to, Id::U64(mint_id))?;
-            self.data::<Data>().last_token_id += 1;
             self._emit_transfer_event(None, Some(to), Id::U64(mint_id));
+            self.data::<Data>().last_token_id += 1;
         }
 
+        self.data::<Data>().account_minted.insert(caller, &true);
         Ok(())
     }
 
     /// Mint next available token for the caller
     default fn mint_next(&mut self) -> Result<(), PSP34Error> {
+        self.check_amount(1)?;
         self.check_value(Self::env().transferred_value(), 1)?;
         let caller = Self::env().caller();
+        if self
+            .data::<Data>()
+            .account_minted
+            .get(caller)
+            .unwrap_or(false)
+            == true
+        {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::CannotMintMoreThanOnce.as_str(),
+            )));
+        }
+
+        if self.data::<Data>().mint_end == true {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::MintEnd.as_str(),
+            )));
+        }
+
         let token_id =
             self.data::<Data>()
                 .last_token_id
@@ -98,12 +125,15 @@ where
                 .ok_or(PSP34Error::Custom(String::from(
                     Shiden34Error::CollectionIsFull.as_str(),
                 )))?;
+
         self.data::<psp34::Data<enumerable::Balances>>()
             ._mint_to(caller, Id::U64(token_id))?;
-        self.data::<Data>().last_token_id += 1;
 
         self._emit_transfer_event(None, Some(caller), Id::U64(token_id));
-        return Ok(())
+
+        self.data::<Data>().account_minted.insert(caller, &true);
+        self.data::<Data>().last_token_id += 1;
+        return Ok(());
     }
 
     /// Set new value for the baseUri
@@ -136,7 +166,6 @@ where
     #[modifiers(only_owner)]
     default fn set_max_mint_amount(&mut self, max_amount: u64) -> Result<(), PSP34Error> {
         self.data::<Data>().max_amount = max_amount;
-
         Ok(())
     }
 
@@ -149,13 +178,14 @@ where
             String::from("baseUri"),
         );
         let mut token_uri = PreludeString::from_utf8(value.unwrap()).unwrap();
-        token_uri = token_uri + &token_id.to_string() + &PreludeString::from(".json");
+        token_uri = token_uri + "1" + &PreludeString::from(".json");
         Ok(token_uri)
     }
 
     /// Get max supply of tokens
-    default fn max_supply(&self) -> u64 {
-        self.data::<Data>().max_supply
+    default fn max_supply(&self) -> u128 {
+        self.data::<psp34::Data<enumerable::Balances>>()
+            .total_supply()
     }
 
     /// Get token price
@@ -166,6 +196,22 @@ where
     /// Get max number of tokens which could be minted per call
     default fn get_max_mint_amount(&mut self) -> u64 {
         self.data::<Data>().max_amount
+    }
+
+    default fn get_is_account_minted(&self, account_id: AccountId) -> bool {
+        self.data::<Data>()
+            .account_minted
+            .get(account_id)
+            .unwrap_or(false)
+    }
+
+    default fn get_mint_end(&self) -> bool {
+        self.data::<Data>().mint_end
+    }
+
+    default fn set_mint_end(&mut self, status: bool) -> Result<(), PSP34Error> {
+        self.data::<Data>().mint_end = status;
+        Ok(())
     }
 }
 
@@ -182,12 +228,12 @@ where
     ) -> Result<(), PSP34Error> {
         if let Some(value) = (mint_amount as u128).checked_mul(self.data::<Data>().price_per_mint) {
             if transferred_value == value {
-                return Ok(())
+                return Ok(());
             }
         }
         return Err(PSP34Error::Custom(String::from(
             Shiden34Error::BadMintValue.as_str(),
-        )))
+        )));
     }
 
     /// Check amount of tokens to be minted
@@ -195,21 +241,15 @@ where
         if mint_amount == 0 {
             return Err(PSP34Error::Custom(String::from(
                 Shiden34Error::CannotMintZeroTokens.as_str(),
-            )))
+            )));
         }
         if mint_amount > self.data::<Data>().max_amount {
             return Err(PSP34Error::Custom(String::from(
                 Shiden34Error::TooManyTokensToMint.as_str(),
-            )))
+            )));
         }
-        if let Some(amount) = self.data::<Data>().last_token_id.checked_add(mint_amount) {
-            if amount <= self.data::<Data>().max_supply {
-                return Ok(())
-            }
-        }
-        return Err(PSP34Error::Custom(String::from(
-            Shiden34Error::CollectionIsFull.as_str(),
-        )))
+
+        return Ok(());
     }
 
     /// Check if token is minted

@@ -1,7 +1,7 @@
-use openbrush::traits::{
-    Balance,
-    String,
-};
+use ink::storage::Mapping;
+use openbrush::traits::AccountId;
+
+use openbrush::traits::{Balance, String};
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
 #[derive(Default, Debug)]
@@ -12,6 +12,8 @@ pub struct Data {
     pub max_supply: u64,
     pub price_per_mint: Balance,
     pub max_amount: u64,
+    pub account_minted: Mapping<AccountId, bool>,
+    pub mint_end: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
@@ -22,6 +24,8 @@ pub enum Shiden34Error {
     CollectionIsFull,
     TooManyTokensToMint,
     WithdrawalFailed,
+    MintEnd,
+    CannotMintMoreThanOnce,
 }
 
 impl Shiden34Error {
@@ -32,6 +36,8 @@ impl Shiden34Error {
             Shiden34Error::CollectionIsFull => String::from("CollectionIsFull"),
             Shiden34Error::TooManyTokensToMint => String::from("TooManyTokensToMint"),
             Shiden34Error::WithdrawalFailed => String::from("WithdrawalFailed"),
+            Shiden34Error::MintEnd => String::from("MintEnd"),
+            Shiden34Error::CannotMintMoreThanOnce => String::from("CannotMintMoreThanOnce"),
         }
     }
 }
