@@ -108,7 +108,6 @@ where
 
     /// Mint next available token for the caller
     default fn mint_next(&mut self) -> Result<(), PSP34Error> {
-        self.check_amount(1)?;
         self.check_value(Self::env().transferred_value(), 1)?;
         let caller = Self::env().caller();
         if self
@@ -189,7 +188,7 @@ where
             String::from("baseUri"),
         );
         let mut token_uri = PreludeString::from_utf8(value.unwrap()).unwrap();
-        token_uri = token_uri + "1" + &PreludeString::from(".json");
+        token_uri = token_uri + &PreludeString::from("1.json");
         Ok(token_uri)
     }
 
@@ -222,6 +221,7 @@ where
         self.data::<Data>().mint_end
     }
 
+    #[modifiers(only_owner)]
     default fn set_mint_end(&mut self, status: bool) -> Result<(), PSP34Error> {
         self.data::<Data>().mint_end = status;
         Ok(())
