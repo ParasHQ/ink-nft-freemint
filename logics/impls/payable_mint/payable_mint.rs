@@ -65,7 +65,6 @@ where
     /// Mint one or more tokens
     #[modifiers(non_reentrant)]
     default fn mint(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error> {
-        assert_eq!(mint_amount, 1);
         self.check_amount(mint_amount)?;
         let caller = Self::env().caller();
 
