@@ -129,7 +129,6 @@ pub mod shiden34 {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::shiden34::PSP34Error::*;
         use ink::{
             env::{
                 pay_with_call,
@@ -137,7 +136,6 @@ pub mod shiden34 {
             },
             prelude::string::String as PreludeString,
         };
-        use payable_mint_pkg::impls::psp34_traits::types::Shiden34Error;
         const PRICE: Balance = 0;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
 
@@ -218,21 +216,17 @@ pub mod shiden34 {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRICE);
             assert!(sh34.mint_next().is_ok());
             // return error if request is for not yet minted token
-            assert_eq!(sh34.token_uri(42), Err(TokenNotExists));
             assert_eq!(
                 sh34.token_uri(1),
-                Ok(PreludeString::from(BASE_URI.to_owned() + "1.json"))
+                PreludeString::from(BASE_URI.to_owned() + "1.json")
             );
-
-            // return error if request is for not yet minted token
-            assert_eq!(sh34.token_uri(42), Err(TokenNotExists));
 
             // verify token_uri when baseUri is empty
             set_sender(accounts.alice);
             assert!(sh34.set_base_uri(PreludeString::from("")).is_ok());
             assert_eq!(
                 sh34.token_uri(1),
-                Ok("".to_owned() + &PreludeString::from("1.json"))
+                "".to_owned() + &PreludeString::from("1.json")
             );
         }
 

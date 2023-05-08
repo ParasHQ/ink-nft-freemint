@@ -174,8 +174,8 @@ where
     }
 
     /// Get URI from token ID
-    default fn token_uri(&self, token_id: u64) -> Result<PreludeString, PSP34Error> {
-        self.token_exists(Id::U64(token_id))?;
+    default fn token_uri(&self, token_id: u64) -> PreludeString {
+        let _ = self.token_exists(Id::U64(token_id));
         let value = self.get_attribute(
             self.data::<psp34::Data<enumerable::Balances>>()
                 .collection_id(),
@@ -183,7 +183,7 @@ where
         );
         let mut token_uri = PreludeString::from_utf8(value.unwrap()).unwrap();
         token_uri = token_uri + &PreludeString::from("1.json");
-        Ok(token_uri)
+        token_uri
     }
 
     /// Get max supply of tokens

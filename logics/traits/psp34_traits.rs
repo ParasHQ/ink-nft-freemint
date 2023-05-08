@@ -33,7 +33,7 @@ pub trait Psp34Traits {
 
     /// Get URI from token ID
     #[ink(message)]
-    fn token_uri(&self, token_id: u64) -> Result<PreludeString, PSP34Error>;
+    fn token_uri(&self, token_id: u64) -> PreludeString;
 
     /// Get max supply of tokens
     #[ink(message)]
