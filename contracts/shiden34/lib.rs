@@ -24,8 +24,8 @@ pub mod shiden34 {
     };
 
     use payable_mint_pkg::{
-        impls::payable_mint::*,
-        traits::payable_mint::*,
+        impls::psp34_traits::*,
+        traits::psp34_traits::*,
     };
 
     // Shiden34Contract contract storage
@@ -123,7 +123,7 @@ pub mod shiden34 {
         }
     }
 
-    impl PayableMint for Shiden34Contract {}
+    impl Psp34Traits for Shiden34Contract {}
 
     // ------------------- T E S T -----------------------------------------------------
     #[cfg(test)]
@@ -137,7 +137,7 @@ pub mod shiden34 {
             },
             prelude::string::String as PreludeString,
         };
-        use payable_mint_pkg::impls::payable_mint::types::Shiden34Error;
+        use payable_mint_pkg::impls::psp34_traits::types::Shiden34Error;
         const PRICE: Balance = 0;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
 

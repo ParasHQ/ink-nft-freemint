@@ -20,12 +20,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 use ink::prelude::string::String as PreludeString;
+use ink::prelude::vec::Vec;
 
-use crate::impls::payable_mint::types::{
+use crate::impls::psp34_traits::types::{
     Data,
     Shiden34Error,
 };
-pub use crate::traits::payable_mint::PayableMint;
+pub use crate::traits::psp34_traits::Psp34Traits;
 
 use openbrush::{
     contracts::{
@@ -52,7 +53,7 @@ pub trait Internal {
     fn token_exists(&self, id: Id) -> Result<(), PSP34Error>;
 }
 
-impl<T> PayableMint for T
+impl<T> Psp34Traits for T
 where
     T: Storage<Data>
         + Storage<psp34::Data<enumerable::Balances>>
@@ -121,7 +122,7 @@ where
             )))
         }
 
-        let token_id =
+        let token_id: u64 =
             self.data::<Data>()
                 .last_token_id
                 .checked_add(1)
@@ -213,6 +214,80 @@ where
     default fn set_mint_end(&mut self, status: bool) -> Result<(), PSP34Error> {
         self.data::<Data>().mint_end = status;
         Ok(())
+    }
+
+    default fn get_attributes(
+        &self,
+        token_id: u64,
+        attributes: Vec<PreludeString>,
+    ) -> Vec<PreludeString> {
+        let length = attributes.len();
+        let mut ret = Vec::<PreludeString>::new();
+        for item in attributes.iter().take(length) {
+            let value: Option<Vec<u8>> =
+                self.get_attribute(Id::U64(token_id), item.clone().into_bytes());
+            if let Some(value) = value {
+                ret.push(PreludeString::from_utf8(value).unwrap());
+            } else {
+                ret.push(PreludeString::from(""));
+            }
+        }
+        ret
+    }
+
+    /// Only Owner can set multiple attributes to a token
+    #[modifiers(only_owner)]
+    default fn set_multiple_attributes(
+        &mut self,
+        token_id: u64,
+        metadata: Vec<(PreludeString, PreludeString)>,
+    ) -> Result<(), PSP34Error> {
+        if token_id == 0 {
+            return Err(PSP34Error::Custom("InvalidInput".as_bytes().to_vec()))
+        }
+        for (attribute, value) in &metadata {
+            add_attribute_name(self, &attribute.clone().into_bytes());
+            self._set_attribute(
+                Id::U64(token_id),
+                attribute.clone().into_bytes(),
+                value.clone().into_bytes(),
+            );
+        }
+        Ok(())
+    }
+
+    default fn get_attribute_count(&self) -> u32 {
+        self.data::<Data>().attribute_count
+    }
+
+    default fn get_attribute_name(&self, index: u32) -> PreludeString {
+        let attribute = self.data::<Data>().attribute_names.get(&index);
+        if let Some(attribute) = attribute {
+            PreludeString::from_utf8(attribute).unwrap()
+        } else {
+            PreludeString::from("")
+        }
+    }
+}
+
+fn add_attribute_name<T: Storage<Data>>(instance: &mut T, attribute_input: &Vec<u8>) {
+    let mut exist: bool = false;
+    for index in 0..instance.data::<Data>().attribute_count {
+        let attribute_name = instance.data::<Data>().attribute_names.get(&(index + 1));
+        if attribute_name.is_some() && attribute_name.unwrap() == *attribute_input {
+            exist = true;
+            break
+        }
+    }
+    if !exist {
+        instance.data::<Data>().attribute_count = instance
+            .data::<Data>()
+            .attribute_count
+            .checked_add(1)
+            .unwrap();
+        let data = &mut instance.data::<Data>();
+        data.attribute_names
+            .insert(&data.attribute_count, attribute_input);
     }
 }
 
