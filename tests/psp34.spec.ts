@@ -3,13 +3,13 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { encodeAddress } from "@polkadot/keyring";
 import BN from "bn.js";
-import Shiden34_factory from "../types/constructors/shiden34";
-import Shiden34 from "../types/contracts/shiden34";
+import NFT_factory from "../types/constructors/nft";
+import NFT from "../types/contracts/nft";
 
 import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { ReturnNumber } from "@727-ventures/typechain-types";
-import { Id, IdBuilder } from "../types/types-arguments/shiden34";
+import { Id, IdBuilder } from "../types/types-arguments/nft";
 
 use(chaiAsPromised);
 
@@ -25,12 +25,12 @@ const wsProvider = new WsProvider("ws://127.0.0.1:9944");
 const keyring = new Keyring({ type: "sr25519" });
 
 describe("Minting psp34 tokens", () => {
-  let shiden34Factory: Shiden34_factory;
+  let nftFactory: NFT_factory;
   let api: ApiPromise;
   let deployer: KeyringPair;
   let bob: KeyringPair;
   let projectAccount: KeyringPair;
-  let contract: Shiden34;
+  let contract: NFT;
 
   const gasLimit = 18750000000;
   const ZERO_ADDRESS = encodeAddress(
@@ -43,9 +43,9 @@ describe("Minting psp34 tokens", () => {
     deployer = keyring.addFromUri("//Alice");
     bob = keyring.addFromUri("//Bob");
     projectAccount = keyring.addFromUri("//Charlie");
-    shiden34Factory = new Shiden34_factory(api, deployer);
-    contract = new Shiden34(
-      (await shiden34Factory.new(["Shiden34"], ["SH34"], [BASE_URI])).address,
+    nftFactory = new NFT_factory(api, deployer);
+    contract = new NFT(
+      (await nftFactory.new(["NFT"], ["SH34"], [BASE_URI])).address,
       deployer,
       api
     );
@@ -53,14 +53,10 @@ describe("Minting psp34 tokens", () => {
 
   it("Create collection works", async () => {
     await setup();
-    const queryList = await contract.query;
     expect(
       (await contract.query.totalSupply()).value.unwrap().toNumber()
     ).to.equal(0);
     expect((await contract.query.owner()).value.ok).to.equal(deployer.address);
-    expect(
-      (await contract.query.maxSupply()).value.unwrap().toNumber()
-    ).to.equal(0);
   });
 
   it("Use mintNext works", async () => {

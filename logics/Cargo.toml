@@ -1,5 +1,5 @@
 [package]
-name = "payable_mint_pkg"
+name = "launchpad_pkg"
 version = "0.3.0"
 authors = ["Astar builder"]
 edition = "2021"

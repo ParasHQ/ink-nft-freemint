@@ -21,11 +21,11 @@
 
 use ink::prelude::string::String as PreludeString;
 
-use crate::impls::payable_mint::types::{
+use crate::impls::launchpad::types::{
     Data,
-    Shiden34Error,
+    NFTError,
 };
-pub use crate::traits::payable_mint::PayableMint;
+pub use crate::traits::launchpad::Launchpad;
 
 use openbrush::{
     contracts::{
@@ -52,7 +52,7 @@ pub trait Internal {
     fn token_exists(&self, id: Id) -> Result<(), PSP34Error>;
 }
 
-impl<T> PayableMint for T
+impl<T> Launchpad for T
 where
     T: Storage<Data>
         + Storage<psp34::Data<enumerable::Balances>>
@@ -76,14 +76,12 @@ where
             == true
         {
             return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::CannotMintMoreThanOnce.as_str(),
+                NFTError::CannotMintMoreThanOnce.as_str(),
             )))
         }
 
         if self.data::<Data>().mint_end == true {
-            return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::MintEnd.as_str(),
-            )))
+            return Err(PSP34Error::Custom(String::from(NFTError::MintEnd.as_str())))
         }
 
         let next_to_mint = self.data::<Data>().last_token_id + 1;
@@ -111,14 +109,12 @@ where
             == true
         {
             return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::CannotMintMoreThanOnce.as_str(),
+                NFTError::CannotMintMoreThanOnce.as_str(),
             )))
         }
 
         if self.data::<Data>().mint_end == true {
-            return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::MintEnd.as_str(),
-            )))
+            return Err(PSP34Error::Custom(String::from(NFTError::MintEnd.as_str())))
         }
 
         let token_id =
@@ -126,7 +122,7 @@ where
                 .last_token_id
                 .checked_add(1)
                 .ok_or(PSP34Error::Custom(String::from(
-                    Shiden34Error::CollectionIsFull.as_str(),
+                    NFTError::CollectionIsFull.as_str(),
                 )))?;
 
         self.data::<psp34::Data<enumerable::Balances>>()
@@ -159,9 +155,7 @@ where
             .unwrap_or_default();
         Self::env()
             .transfer(self.data::<ownable::Data>().owner(), current_balance)
-            .map_err(|_| {
-                PSP34Error::Custom(String::from(Shiden34Error::WithdrawalFailed.as_str()))
-            })?;
+            .map_err(|_| PSP34Error::Custom(String::from(NFTError::WithdrawalFailed.as_str())))?;
         Ok(())
     }
 
@@ -216,7 +210,7 @@ where
     }
 }
 
-/// Helper trait for PayableMint
+/// Helper trait for Launchpad
 impl<T> Internal for T
 where
     T: Storage<Data> + Storage<psp34::Data<enumerable::Balances>>,
@@ -225,12 +219,12 @@ where
     default fn check_amount(&self, mint_amount: u64) -> Result<(), PSP34Error> {
         if mint_amount == 0 {
             return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::CannotMintZeroTokens.as_str(),
+                NFTError::CannotMintZeroTokens.as_str(),
             )))
         }
         if mint_amount > self.data::<Data>().max_amount {
             return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::TooManyTokensToMint.as_str(),
+                NFTError::TooManyTokensToMint.as_str(),
             )))
         }
 
