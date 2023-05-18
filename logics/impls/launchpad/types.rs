@@ -1,6 +1,8 @@
-use ink::storage::Mapping;
+use ink::{
+    prelude::vec::Vec,
+    storage::Mapping,
+};
 use openbrush::traits::AccountId;
-use ink::prelude::vec::Vec;
 
 use openbrush::traits::String;
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
@@ -14,12 +16,12 @@ pub struct Data {
     pub account_minted: Mapping<AccountId, bool>,
     pub mint_end: bool,
     pub attribute_count: u32,
-    pub attribute_names: Mapping<u32, Vec<u8>>
+    pub attribute_names: Mapping<u32, Vec<u8>>,
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-pub enum Shiden34Error {
+pub enum NFTError {
     BadMintValue,
     CannotMintZeroTokens,
     CollectionIsFull,
@@ -29,16 +31,16 @@ pub enum Shiden34Error {
     CannotMintMoreThanOnce,
 }
 
-impl Shiden34Error {
+impl NFTError {
     pub fn as_str(&self) -> String {
         match self {
-            Shiden34Error::BadMintValue => String::from("BadMintValue"),
-            Shiden34Error::CannotMintZeroTokens => String::from("CannotMintZeroTokens"),
-            Shiden34Error::CollectionIsFull => String::from("CollectionIsFull"),
-            Shiden34Error::TooManyTokensToMint => String::from("TooManyTokensToMint"),
-            Shiden34Error::WithdrawalFailed => String::from("WithdrawalFailed"),
-            Shiden34Error::MintEnd => String::from("MintEnd"),
-            Shiden34Error::CannotMintMoreThanOnce => String::from("CannotMintMoreThanOnce"),
+            NFTError::BadMintValue => String::from("BadMintValue"),
+            NFTError::CannotMintZeroTokens => String::from("CannotMintZeroTokens"),
+            NFTError::CollectionIsFull => String::from("CollectionIsFull"),
+            NFTError::TooManyTokensToMint => String::from("TooManyTokensToMint"),
+            NFTError::WithdrawalFailed => String::from("WithdrawalFailed"),
+            NFTError::MintEnd => String::from("MintEnd"),
+            NFTError::CannotMintMoreThanOnce => String::from("CannotMintMoreThanOnce"),
         }
     }
 }

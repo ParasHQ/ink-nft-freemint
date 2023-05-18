@@ -4,10 +4,10 @@ use openbrush::{
 };
 
 #[openbrush::wrapper]
-pub type PayableMintRef = dyn PayableMint;
+pub type LaunchpadRef = dyn Launchpad;
 
 #[openbrush::trait_definition]
-pub trait PayableMint {
+pub trait Launchpad {
     /// Mint one or more tokens
     #[ink(message, payable)]
     fn mint(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error>;

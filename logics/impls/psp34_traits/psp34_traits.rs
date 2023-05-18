@@ -24,10 +24,7 @@ use ink::prelude::{
     vec::Vec,
 };
 
-use crate::impls::payable_mint::types::{
-    Data,
-    Shiden34Error,
-};
+use crate::impls::launchpad::types::Data;
 pub use crate::traits::psp34_traits::Psp34Traits;
 
 use openbrush::{

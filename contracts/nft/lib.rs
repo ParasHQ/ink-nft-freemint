@@ -2,7 +2,7 @@
 #![feature(min_specialization)]
 
 #[openbrush::contract]
-pub mod shiden34 {
+pub mod nft {
     use ink::codegen::{
         EmitEvent,
         Env,
@@ -23,21 +23,18 @@ pub mod shiden34 {
         },
     };
 
-    use payable_mint_pkg::{
-        impls::{
-            payable_mint::*,
-            psp34_traits::*,
-        },
+    use launchpad_pkg::{
+        impls::launchpad::*,
         traits::{
-            payable_mint::*,
+            launchpad::*,
             psp34_traits::*,
         },
     };
 
-    // Shiden34Contract contract storage
+    // NFTContract contract storage
     #[ink(storage)]
     #[derive(Default, Storage)]
-    pub struct Shiden34Contract {
+    pub struct NFTContract {
         #[storage_field]
         psp34: psp34::Data<enumerable::Balances>,
         #[storage_field]
@@ -47,13 +44,14 @@ pub mod shiden34 {
         #[storage_field]
         metadata: metadata::Data,
         #[storage_field]
-        payable_mint: types::Data,
+        launchpad: types::Data,
     }
 
-    impl PSP34 for Shiden34Contract {}
-    impl PSP34Enumerable for Shiden34Contract {}
-    impl PSP34Metadata for Shiden34Contract {}
-    impl Ownable for Shiden34Contract {}
+    impl PSP34 for NFTContract {}
+    impl PSP34Enumerable for NFTContract {}
+    impl PSP34Metadata for NFTContract {}
+    impl Psp34Traits for NFTContract {}
+    impl Ownable for NFTContract {}
 
     /// Event emitted when a token transfer occurs.
     #[ink(event)]
@@ -78,7 +76,7 @@ pub mod shiden34 {
         approved: bool,
     }
 
-    impl Shiden34Contract {
+    impl NFTContract {
         #[ink(constructor)]
         pub fn new(name: String, symbol: String, base_uri: String) -> Self {
             let mut instance = Self::default();
@@ -87,9 +85,9 @@ pub mod shiden34 {
             instance._set_attribute(collection_id.clone(), String::from("name"), name);
             instance._set_attribute(collection_id.clone(), String::from("symbol"), symbol);
             instance._set_attribute(collection_id, String::from("baseUri"), base_uri);
-            instance.payable_mint.last_token_id = 0;
-            instance.payable_mint.max_amount = 1;
-            instance.payable_mint.mint_end = false;
+            instance.launchpad.last_token_id = 0;
+            instance.launchpad.max_amount = 1;
+            instance.launchpad.mint_end = false;
             instance
         }
 
@@ -108,7 +106,7 @@ pub mod shiden34 {
     }
 
     // Override event emission methods
-    impl psp34::Internal for Shiden34Contract {
+    impl psp34::Internal for NFTContract {
         fn _emit_transfer_event(&self, from: Option<AccountId>, to: Option<AccountId>, id: Id) {
             self.env().emit_event(Transfer { from, to, id });
         }
@@ -129,12 +127,13 @@ pub mod shiden34 {
         }
     }
 
-    impl PayableMint for Shiden34Contract {}
+    impl Launchpad for NFTContract {}
 
     // ------------------- T E S T -----------------------------------------------------
     #[cfg(test)]
     mod tests {
         use super::*;
+        use crate::nft::PSP34Error::*;
         use ink::{
             env::{
                 pay_with_call,
@@ -151,7 +150,7 @@ pub mod shiden34 {
             let collection_id = sh34.collection_id();
             assert_eq!(
                 sh34.get_attribute(collection_id.clone(), String::from("name")),
-                Some(String::from("Shiden34"))
+                Some(String::from("NFT"))
             );
             assert_eq!(
                 sh34.get_attribute(collection_id.clone(), String::from("symbol")),
@@ -164,9 +163,9 @@ pub mod shiden34 {
             assert_eq!(sh34.max_supply(), 0);
         }
 
-        fn init() -> Shiden34Contract {
-            Shiden34Contract::new(
-                String::from("Shiden34"),
+        fn init() -> NFTContract {
+            NFTContract::new(
+                String::from("NFT"),
                 String::from("SH34"),
                 String::from(BASE_URI),
             )
@@ -187,7 +186,7 @@ pub mod shiden34 {
             assert_eq!(sh34.balance_of(accounts.bob), 1);
 
             assert_eq!(sh34.owners_token_by_index(accounts.bob, 0), Ok(Id::U64(1)));
-            assert_eq!(sh34.payable_mint.last_token_id, 1);
+            assert_eq!(sh34.launchpad.last_token_id, 1);
             assert_eq!(1, ink::env::test::recorded_events().count());
         }
 
