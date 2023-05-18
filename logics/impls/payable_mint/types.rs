@@ -1,5 +1,6 @@
 use ink::storage::Mapping;
 use openbrush::traits::AccountId;
+use ink::prelude::vec::Vec;
 
 use openbrush::traits::String;
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
@@ -12,6 +13,8 @@ pub struct Data {
     pub max_amount: u64,
     pub account_minted: Mapping<AccountId, bool>,
     pub mint_end: bool,
+    pub attribute_count: u32,
+    pub attribute_names: Mapping<u32, Vec<u8>>
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
