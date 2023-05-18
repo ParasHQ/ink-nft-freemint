@@ -1,5 +1,3 @@
-use ink::prelude::string::String as PreludeString;
-
 use openbrush::{
     contracts::psp34::PSP34Error,
     traits::AccountId,
@@ -18,10 +16,6 @@ pub trait Launchpad {
     #[ink(message, payable)]
     fn mint_next(&mut self) -> Result<(), PSP34Error>;
 
-    /// Set new value for the baseUri
-    #[ink(message)]
-    fn set_base_uri(&mut self, uri: PreludeString) -> Result<(), PSP34Error>;
-
     /// Withdraws funds to contract owner
     #[ink(message)]
     fn withdraw(&mut self) -> Result<(), PSP34Error>;
@@ -29,10 +23,6 @@ pub trait Launchpad {
     /// Set max number of tokens which could be minted per call
     #[ink(message)]
     fn set_max_mint_amount(&mut self, max_amount: u64) -> Result<(), PSP34Error>;
-
-    /// Get URI from token ID
-    #[ink(message)]
-    fn token_uri(&self, token_id: u64) -> Result<PreludeString, PSP34Error>;
 
     /// Get max supply of tokens
     #[ink(message)]

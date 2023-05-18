@@ -19,8 +19,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use ink::prelude::string::String as PreludeString;
-
 use crate::impls::launchpad::types::{
     Data,
     NFTError,
@@ -47,9 +45,6 @@ use openbrush::{
 pub trait Internal {
     /// Check amount of tokens to be minted
     fn check_amount(&self, mint_amount: u64) -> Result<(), PSP34Error>;
-
-    /// Check if token is minted
-    fn token_exists(&self, id: Id) -> Result<(), PSP34Error>;
 }
 
 impl<T> Launchpad for T
@@ -135,17 +130,6 @@ where
         return Ok(())
     }
 
-    /// Set new value for the baseUri
-    #[modifiers(only_owner)]
-    default fn set_base_uri(&mut self, uri: PreludeString) -> Result<(), PSP34Error> {
-        let id = self
-            .data::<psp34::Data<enumerable::Balances>>()
-            .collection_id();
-        self.data::<metadata::Data>()
-            ._set_attribute(id, String::from("baseUri"), uri.into_bytes());
-        Ok(())
-    }
-
     /// Withdraws funds to contract owner
     #[modifiers(only_owner)]
     default fn withdraw(&mut self) -> Result<(), PSP34Error> {
@@ -164,19 +148,6 @@ where
     default fn set_max_mint_amount(&mut self, max_amount: u64) -> Result<(), PSP34Error> {
         self.data::<Data>().max_amount = max_amount;
         Ok(())
-    }
-
-    /// Get URI from token ID
-    default fn token_uri(&self, token_id: u64) -> Result<PreludeString, PSP34Error> {
-        self.token_exists(Id::U64(token_id))?;
-        let value = self.get_attribute(
-            self.data::<psp34::Data<enumerable::Balances>>()
-                .collection_id(),
-            String::from("baseUri"),
-        );
-        let mut token_uri = PreludeString::from_utf8(value.unwrap()).unwrap();
-        token_uri = token_uri + &PreludeString::from("1.json");
-        Ok(token_uri)
     }
 
     /// Get max supply of tokens
@@ -229,13 +200,5 @@ where
         }
 
         return Ok(())
-    }
-
-    /// Check if token is minted
-    default fn token_exists(&self, id: Id) -> Result<(), PSP34Error> {
-        self.data::<psp34::Data<enumerable::Balances>>()
-            .owner_of(id)
-            .ok_or(PSP34Error::TokenNotExists)?;
-        Ok(())
     }
 }

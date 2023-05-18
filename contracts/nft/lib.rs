@@ -25,7 +25,10 @@ pub mod nft {
 
     use launchpad_pkg::{
         impls::launchpad::*,
-        traits::launchpad::*,
+        traits::{
+            launchpad::*,
+            psp34_traits::*,
+        },
     };
 
     // NFTContract contract storage
@@ -47,6 +50,7 @@ pub mod nft {
     impl PSP34 for NFTContract {}
     impl PSP34Enumerable for NFTContract {}
     impl PSP34Metadata for NFTContract {}
+    impl Psp34Traits for NFTContract {}
     impl Ownable for NFTContract {}
 
     /// Event emitted when a token transfer occurs.
@@ -217,21 +221,17 @@ pub mod nft {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRICE);
             assert!(sh34.mint_next().is_ok());
             // return error if request is for not yet minted token
-            assert_eq!(sh34.token_uri(42), Err(TokenNotExists));
             assert_eq!(
                 sh34.token_uri(1),
-                Ok(PreludeString::from(BASE_URI.to_owned() + "1.json"))
+                PreludeString::from(BASE_URI.to_owned() + "1.json")
             );
-
-            // return error if request is for not yet minted token
-            assert_eq!(sh34.token_uri(42), Err(TokenNotExists));
 
             // verify token_uri when baseUri is empty
             set_sender(accounts.alice);
             assert!(sh34.set_base_uri(PreludeString::from("")).is_ok());
             assert_eq!(
                 sh34.token_uri(1),
-                Ok("".to_owned() + &PreludeString::from("1.json"))
+                "".to_owned() + &PreludeString::from("1.json")
             );
         }
 

@@ -1,4 +1,7 @@
-use ink::storage::Mapping;
+use ink::{
+    prelude::vec::Vec,
+    storage::Mapping,
+};
 use openbrush::traits::AccountId;
 
 use openbrush::traits::String;
@@ -12,6 +15,8 @@ pub struct Data {
     pub max_amount: u64,
     pub account_minted: Mapping<AccountId, bool>,
     pub mint_end: bool,
+    pub attribute_count: u32,
+    pub attribute_names: Mapping<u32, Vec<u8>>,
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
